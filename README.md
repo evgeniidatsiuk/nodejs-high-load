@@ -41,6 +41,23 @@ re-run the exact same load test:
 > `/compute` still blocks in both, and you'd still reach for cluster/worker
 > threads to scale it.
 
+## 📐 System-design diagrams
+
+**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** has Mermaid diagrams (they render
+on GitHub) showing how each approach scales — the single-threaded event loop, the
+blocking problem, cluster vs worker threads, caching, streaming, framework
+overhead, and a capstone topology.
+
+The set follows the 10-point blueprint from Volodymyr Loban's
+[*Node.js and High Load (Part 1)*](https://medium.com/@vloban/node-js-and-high-load-part-1-ba023806e72d),
+which frames a 100k–1M RPS system as: **(1)** microservices, **(2)** load
+balancing, **(3)** horizontal scaling, **(4)** optimized networking/CDN,
+**(5)** in-memory caching, **(6)** database optimization, **(7)** performance
+optimization, **(8)** asynchronous processing, **(9)** monitoring, **(10)**
+security. This repo makes the runnable subset — **5, 7, 8, 9** (plus the cluster
+analog of **2**) — measurable locally; the rest are drawn as infrastructure. See
+the [mapping table](docs/ARCHITECTURE.md#how-the-10-points-map-to-this-repo).
+
 ---
 
 ## Quick start
