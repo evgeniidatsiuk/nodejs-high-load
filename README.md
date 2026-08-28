@@ -84,9 +84,22 @@ BASE=http://localhost:3000 N=100000 k6 run load-tests/k6/ping-under-load.js
 
 ## Measured results
 
-Numbers below are from this repo on a 14-core machine, `n=90000`, 50 connections,
-8s, with cluster and worker pool both capped to **4** for an apples-to-apples
-comparison. Run it yourself — your numbers will differ, the *shape* won't.
+### Test machine
+
+The numbers in this section were measured on:
+
+| | |
+|---|---|
+| Machine | Apple `Mac16,8` (MacBook Pro) |
+| CPU | Apple M4 Pro — 14 cores (14 physical / 14 logical, `os.availableParallelism()` = 14) |
+| Architecture | arm64 |
+| Memory | 48 GB |
+| OS | macOS 15.6.1 (build 24G90) |
+| Node.js | v24.13.1 (V8 13.6.233.17) |
+
+Run parameters: `n=90000`, 50 connections, 8s duration, with cluster and worker
+pool both capped to **4** for an apples-to-apples comparison. Run it yourself —
+your numbers will differ, the *shape* won't.
 
 ### Throughput & latency on `/compute`
 
