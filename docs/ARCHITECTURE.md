@@ -3,12 +3,11 @@
 System-design view of the eight approaches in this repo, and how each one scales.
 All diagrams are [Mermaid](https://mermaid.js.org/) and render directly on GitHub.
 
-This follows the 10-point blueprint from Volodymyr Loban's
-[*Node.js and High Load (Part 1)*](https://medium.com/@vloban/node-js-and-high-load-part-1-ba023806e72d):
-microservices, load balancing, horizontal scaling, optimized networking/CDN,
-in-memory caching, database optimization, performance optimization, asynchronous
-processing, monitoring, and security. Section 7 draws that full blueprint and
-maps each point to the runnable examples here.
+It also lays out a 10-point blueprint for a high-load system: microservices,
+load balancing, horizontal scaling, optimized networking/CDN, in-memory caching,
+database optimization, performance optimization, asynchronous processing,
+monitoring, and security. Section 7 draws that full blueprint and maps each point
+to the runnable examples here.
 
 **Notation:** rectangles = processes/threads · cylinders = datastores ·
 solid arrows = request/data flow · dashed arrows = lifecycle or backpressure.
@@ -191,11 +190,11 @@ flowchart TB
 
 ---
 
-## 7. The article's blueprint — combine all 10 points
+## 7. Putting it together — the full high-load blueprint
 
-The article's capstone ("combine them all together") is a full system-design
-topology. Here it is redrawn with each of the 10 points numbered, so you can see
-where the runnable examples in this repo fit and where the rest is infrastructure.
+Combining all 10 points gives a full system-design topology. Here it is with each
+point numbered, so you can see where the runnable examples in this repo fit and
+where the rest is infrastructure.
 
 ```mermaid
 flowchart TB
@@ -247,7 +246,7 @@ flowchart TB
 
 ### How the 10 points map to this repo
 
-| # | Article point | In this repo | Runnable? |
+| # | High-load concern | In this repo | Runnable? |
 |---|---------------|--------------|-----------|
 | 1 | Application architecture (microservices) | each server is a small single-purpose service | ✅ all `src/*` |
 | 2 | Load balancing | the kernel load-balancing the cluster's shared socket is the local analog | ◐ `03-cluster` |

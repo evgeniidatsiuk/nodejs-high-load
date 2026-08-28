@@ -4,8 +4,8 @@ Eight small, self-contained HTTP servers, each demonstrating a different
 approach to handling high load in Node.js — plus ready-to-run load tests (k6
 **and** a zero-install autocannon runner).
 
-Inspired by the "Node.js and high load" series (event loop → blocking → cluster
-→ worker threads), extended with caching and streaming.
+It walks the core high-load story — event loop → blocking → cluster → worker
+threads — and extends it with caching, streaming, and a framework comparison.
 
 All servers expose the **same routes** so you can swap one for another and
 re-run the exact same load test:
@@ -48,15 +48,14 @@ on GitHub) showing how each approach scales — the single-threaded event loop, 
 blocking problem, cluster vs worker threads, caching, streaming, framework
 overhead, and a capstone topology.
 
-The set follows the 10-point blueprint from Volodymyr Loban's
-[*Node.js and High Load (Part 1)*](https://medium.com/@vloban/node-js-and-high-load-part-1-ba023806e72d),
-which frames a 100k–1M RPS system as: **(1)** microservices, **(2)** load
-balancing, **(3)** horizontal scaling, **(4)** optimized networking/CDN,
-**(5)** in-memory caching, **(6)** database optimization, **(7)** performance
-optimization, **(8)** asynchronous processing, **(9)** monitoring, **(10)**
-security. This repo makes the runnable subset — **5, 7, 8, 9** (plus the cluster
-analog of **2**) — measurable locally; the rest are drawn as infrastructure. See
-the [mapping table](docs/ARCHITECTURE.md#how-the-10-points-map-to-this-repo).
+They also lay out a 10-point blueprint for a 100k–1M RPS system: **(1)**
+microservices, **(2)** load balancing, **(3)** horizontal scaling, **(4)**
+optimized networking/CDN, **(5)** in-memory caching, **(6)** database
+optimization, **(7)** performance optimization, **(8)** asynchronous processing,
+**(9)** monitoring, **(10)** security. This repo makes the runnable subset —
+**5, 7, 8, 9** (plus the cluster analog of **2**) — measurable locally; the rest
+are drawn as infrastructure. See the
+[mapping table](docs/ARCHITECTURE.md#how-the-10-points-map-to-this-repo).
 
 ---
 
