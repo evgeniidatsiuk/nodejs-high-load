@@ -1,4 +1,4 @@
-# High-Load Node.js — approaches you can load-test locally
+# High-Load Node.js testing diff approaches 
 
 Six small, self-contained HTTP servers, each demonstrating a different approach
 to handling high load in Node.js — plus ready-to-run load tests (k6 **and** a
