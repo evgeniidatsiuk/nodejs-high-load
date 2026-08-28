@@ -5,7 +5,7 @@
 #   bash load-tests/bench.sh cluster
 #   N=100000 CONNECTIONS=50 DURATION=10 bash load-tests/bench.sh workers
 #
-# Valid targets: blocking nonblocking cluster workers caching streaming
+# Valid targets: blocking nonblocking cluster workers caching streaming express fastify
 set -euo pipefail
 
 TARGET="${1:-blocking}"
@@ -24,6 +24,8 @@ case "$TARGET" in
   workers)     SCRIPT="src/04-worker-threads/server.js" ;;
   caching)     SCRIPT="src/05-caching/server.js" ;;
   streaming)   SCRIPT="src/06-streaming/server.js" ;;
+  express)     SCRIPT="src/07-express/server.js" ;;
+  fastify)     SCRIPT="src/08-fastify/server.js" ;;
   *) echo "unknown target: $TARGET"; exit 1 ;;
 esac
 

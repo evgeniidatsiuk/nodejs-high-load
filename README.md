@@ -1,8 +1,8 @@
 # High-Load Node.js testing diff approaches 
 
-Six small, self-contained HTTP servers, each demonstrating a different approach
-to handling high load in Node.js — plus ready-to-run load tests (k6 **and** a
-zero-install autocannon runner).
+Eight small, self-contained HTTP servers, each demonstrating a different
+approach to handling high load in Node.js — plus ready-to-run load tests (k6
+**and** a zero-install autocannon runner).
 
 Inspired by the "Node.js and high load" series (event loop → blocking → cluster
 → worker threads), extended with caching and streaming.
@@ -22,7 +22,7 @@ re-run the exact same load test:
 
 ---
 
-## The six approaches
+## The eight approaches
 
 | # | Approach | Folder | Idea |
 |---|----------|--------|------|
@@ -32,6 +32,14 @@ re-run the exact same load test:
 | 4 | **Worker threads** | `src/04-worker-threads` | One process, a pool of threads for CPU work. Main event loop stays free. |
 | 5 | **Caching / memoization** | `src/05-caching` | Bounded LRU cache. The cheapest request is the one you never compute. |
 | 6 | **Streaming** | `src/06-streaming` | Stream large responses with backpressure. Constant memory instead of buffering. |
+| 7 | **Express** | `src/07-express` | The popular framework. Ergonomic, but per-request overhead costs throughput. |
+| 8 | **Fastify** | `src/08-fastify` | Low-overhead framework: radix router + schema-compiled JSON serialization. |
+
+> Examples 1–6 use the built-in `http` module to keep the mechanics visible.
+> Examples 7–8 add the two most common frameworks so you can measure framework
+> overhead — and see that a framework is **orthogonal** to the event-loop story:
+> `/compute` still blocks in both, and you'd still reach for cluster/worker
+> threads to scale it.
 
 ---
 
@@ -41,7 +49,7 @@ re-run the exact same load test:
 npm install                 # installs autocannon (the only dependency)
 
 # 1. Start one server (each listens on :3000, override with PORT=)
-npm run start:blocking      # or :nonblocking :cluster :workers :caching :streaming
+npm run start:blocking      # or :nonblocking :cluster :workers :caching :streaming :express :fastify
 
 # 2. In another terminal, load it
 npm run load                # hits /compute?n=100000 with 50 connections for 10s
@@ -126,6 +134,32 @@ This is the whole story in one table: on the blocking server a trivial health
 check is stuck behind heavy CPU work. Worker threads keep the request loop
 completely free; cluster spreads the pain across processes.
 
+### Framework overhead on a cheap route — raw http vs Express vs Fastify
+
+Single process, `GET /ping` (trivial JSON), 100 connections, 8s. This isolates
+the framework's per-request cost, with no CPU work involved:
+
+| Server | req/sec | latency p50 | latency max |
+|--------|--------:|------------:|------------:|
+| Raw `http` (example 1) | ~107,000 | 0 ms | 58 ms |
+| Express (example 7) | ~66,000 | 1 ms | 99 ms |
+| Fastify (example 8) | ~117,000 | 0 ms | 64 ms |
+
+Takeaways: **Express costs ~40% throughput** vs raw `http` on high-frequency
+cheap routes (middleware chain + general router). **Fastify matches or beats raw
+`http`** thanks to its radix router and schema-compiled serializer
+(`fast-json-stringify`). On a `/compute`-style CPU route the framework barely
+matters — the prime-counting dominates — which is the point: pick the framework
+for ergonomics/throughput on light routes, but blocking still needs
+cluster/worker threads.
+
+Reproduce:
+
+```bash
+bash load-tests/bench.sh express     # then hit /ping, or:
+node load-tests/autocannon.js "http://localhost:3000/ping"
+```
+
 ### Caching (`src/05-caching`)
 
 Hit the same `n` twice: the first call computes (`"cached": false`), every
@@ -160,4 +194,5 @@ Shared helpers live in `src/common/`:
 - **Worker threads** to offload CPU-heavy computation while keeping a single, shared-memory process → example 4.
 - **Cache** hot/repeated results (in-memory, then Redis, then CDN/HTTP caching) → example 5.
 - **Stream** anything large so per-request memory stays flat → example 6.
-- In production you often **combine** them: cluster of processes, each offloading CPU to worker threads, fronted by a cache.
+- **Pick a framework** for ergonomics, but know its cost: Express is convenient and everywhere (example 7); Fastify is the pick when per-request overhead matters (example 8). Neither changes the blocking story.
+- In production you often **combine** them: cluster of processes (or Fastify behind a load balancer), each offloading CPU to worker threads, fronted by a cache.
