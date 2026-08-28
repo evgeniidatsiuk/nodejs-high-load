@@ -46,7 +46,7 @@ re-run the exact same load test:
 ## Quick start
 
 ```bash
-npm install                 # installs autocannon (the only dependency)
+npm install                 # autocannon (load tester) + express & fastify (examples 7-8)
 
 # 1. Start one server (each listens on :3000, override with PORT=)
 npm run start:blocking      # or :nonblocking :cluster :workers :caching :streaming :express :fastify
