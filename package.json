@@ -1,0 +1,22 @@
+{
+  "name": "high-load-node",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hands-on examples of high-load Node.js approaches (event loop, cluster, worker threads, caching, streaming) with local load tests.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start:blocking": "node src/01-blocking/server.js",
+    "start:nonblocking": "node src/02-nonblocking/server.js",
+    "start:cluster": "node src/03-cluster/server.js",
+    "start:workers": "node src/04-worker-threads/server.js",
+    "start:caching": "node src/05-caching/server.js",
+    "start:streaming": "node src/06-streaming/server.js",
+    "load": "node load-tests/autocannon.js",
+    "bench": "bash load-tests/bench.sh"
+  },
+  "devDependencies": {
+    "autocannon": "^7.15.0"
+  }
+}
