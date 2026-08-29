@@ -1,14 +1,16 @@
 # High-Load Node.js testing diff approaches 
 
-Eight small, self-contained HTTP servers, each demonstrating a different
+Nine small, self-contained HTTP servers, each demonstrating a different
 approach to handling high load in Node.js — plus ready-to-run load tests (k6
 **and** a zero-install autocannon runner).
 
 It walks the core high-load story — event loop → blocking → cluster → worker
-threads — and extends it with caching, streaming, and a framework comparison.
+threads — and extends it with caching, streaming, a framework comparison, and an
+async job queue.
 
-All servers expose the **same routes** so you can swap one for another and
-re-run the exact same load test:
+Examples 1–8 expose the **same routes** so you can swap one for another and
+re-run the exact same load test (example 9, the queue, uses `POST /jobs` instead
+— see its section):
 
 | Route | What it does |
 |-------|--------------|
@@ -22,7 +24,7 @@ re-run the exact same load test:
 
 ---
 
-## The eight approaches
+## The nine approaches
 
 | # | Approach | Folder | Idea |
 |---|----------|--------|------|
@@ -34,12 +36,15 @@ re-run the exact same load test:
 | 6 | **Streaming** | `src/06-streaming` | Stream large responses with backpressure. Constant memory instead of buffering. |
 | 7 | **Express** | `src/07-express` | The popular framework. Ergonomic, but per-request overhead costs throughput. |
 | 8 | **Fastify** | `src/08-fastify` | Low-overhead framework: radix router + schema-compiled JSON serialization. |
+| 9 | **Async job queue** | `src/09-queue` | Enqueue and return `202` instantly; background workers do the work later. |
 
 > Examples 1–6 use the built-in `http` module to keep the mechanics visible.
 > Examples 7–8 add the two most common frameworks so you can measure framework
 > overhead — and see that a framework is **orthogonal** to the event-loop story:
 > `/compute` still blocks in both, and you'd still reach for cluster/worker
-> threads to scale it.
+> threads to scale it. Example 9 decouples accepting work from doing it: the
+> request just enqueues a job, so accept-throughput no longer depends on how
+> heavy the work is.
 
 ## 📐 System-design diagrams
 
@@ -65,7 +70,7 @@ are drawn as infrastructure. See the
 npm install                 # autocannon (load tester) + express & fastify (examples 7-8)
 
 # 1. Start one server (each listens on :3000, override with PORT=)
-npm run start:blocking      # or :nonblocking :cluster :workers :caching :streaming :express :fastify
+npm run start:blocking      # or :nonblocking :cluster :workers :caching :streaming :express :fastify :queue
 
 # 2. In another terminal, load it
 npm run load                # hits /compute?n=100000 with 50 connections for 10s
@@ -174,6 +179,29 @@ Reproduce:
 ```bash
 bash load-tests/bench.sh express     # then hit /ping, or:
 node load-tests/autocannon.js "http://localhost:3000/ping"
+```
+
+### Async job queue — accept-rate decoupled from process-rate (`src/09-queue`)
+
+Same heavy work (`n=200000`), 50 connections, 6s. Blocking does the work inside
+the request; the queue just enqueues (`POST /jobs`) and lets background workers
+process it:
+
+| Endpoint | req/sec | latency p50 | latency max |
+|----------|--------:|------------:|------------:|
+| Blocking `GET /compute` | ~291 | 148 ms | 4129 ms |
+| Queue `POST /jobs` | ~8,322 | 6 ms | 35 ms |
+
+**~28× accept-throughput** and a flat event loop, because the request no longer
+waits for the work. The honest trade-off is visible in `/stats`: with
+`concurrency=4`, the queue *accepted* far more than it could *process* in 6s, so
+`queue.depth` climbed into the tens of thousands while `processed` stayed a few
+thousand. Accept-rate ≠ process-rate — in production you bound the queue (or the
+enqueue endpoint) and scale consumers. Enqueue, then poll `GET /jobs/<id>`:
+
+```bash
+id=$(curl -s -X POST "http://localhost:3000/jobs?n=200000" | node -pe 'JSON.parse(require("fs").readFileSync(0)).id')
+curl -s "http://localhost:3000/jobs/$id"   # { status: "done", result: ... }
 ```
 
 ### Caching (`src/05-caching`)

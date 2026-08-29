@@ -5,7 +5,7 @@
 #   bash load-tests/bench.sh cluster
 #   N=100000 CONNECTIONS=50 DURATION=10 bash load-tests/bench.sh workers
 #
-# Valid targets: blocking nonblocking cluster workers caching streaming express fastify
+# Valid targets: blocking nonblocking cluster workers caching streaming express fastify queue
 set -euo pipefail
 
 TARGET="${1:-blocking}"
@@ -17,6 +17,10 @@ DURATION="${DURATION:-10}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# Most targets load GET /compute; the queue enqueues via POST /jobs.
+ROUTE="/compute?n=$N"
+METHOD="GET"
+
 case "$TARGET" in
   blocking)    SCRIPT="src/01-blocking/server.js" ;;
   nonblocking) SCRIPT="src/02-nonblocking/server.js" ;;
@@ -26,6 +30,7 @@ case "$TARGET" in
   streaming)   SCRIPT="src/06-streaming/server.js" ;;
   express)     SCRIPT="src/07-express/server.js" ;;
   fastify)     SCRIPT="src/08-fastify/server.js" ;;
+  queue)       SCRIPT="src/09-queue/server.js"; ROUTE="/jobs?n=$N"; METHOD="POST" ;;
   *) echo "unknown target: $TARGET"; exit 1 ;;
 esac
 
@@ -40,9 +45,9 @@ for _ in $(seq 1 50); do
   sleep 0.1
 done
 
-echo "==> load: /compute?n=$N  (connections=$CONNECTIONS, ${DURATION}s)"
-CONNECTIONS="$CONNECTIONS" DURATION="$DURATION" \
-  node load-tests/autocannon.js "http://localhost:$PORT/compute?n=$N"
+echo "==> load: $METHOD $ROUTE  (connections=$CONNECTIONS, ${DURATION}s)"
+METHOD="$METHOD" CONNECTIONS="$CONNECTIONS" DURATION="$DURATION" \
+  node load-tests/autocannon.js "http://localhost:$PORT$ROUTE"
 
 echo ""
 echo "==> event-loop + memory stats after load:"

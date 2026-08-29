@@ -6,7 +6,7 @@ All diagrams are [Mermaid](https://mermaid.js.org/) and render directly on GitHu
 It also lays out a 10-point blueprint for a high-load system: microservices,
 load balancing, horizontal scaling, optimized networking/CDN, in-memory caching,
 database optimization, performance optimization, asynchronous processing,
-monitoring, and security. Section 7 draws that full blueprint and maps each point
+monitoring, and security. Section 8 draws that full blueprint and maps each point
 to the runnable examples here.
 
 **Notation:** rectangles = processes/threads · cylinders = datastores ·
@@ -117,7 +117,42 @@ flowchart LR
 
 ---
 
-## 4. Don't do the work twice — caching
+## 4. Async processing — enqueue now, process later
+
+Don't do heavy work inside the request at all. The handler enqueues a job and
+returns `202` immediately; a bounded set of background workers drains the queue
+(here, the worker-thread pool from section 3). Clients poll for the result. This
+decouples the throughput of *accepting* work from the throughput of *doing* it.
+Example [`09-queue`](../src/09-queue) — the local, dependency-free analog of a
+message queue (RabbitMQ / Kafka) with consumers.
+
+```mermaid
+flowchart LR
+    C["Client"] -->|"1 · POST /jobs"| API["HTTP handler<br/>(event loop)"]
+    API -.->|"2 · 202 Accepted (instant)"| C
+    API -->|"enqueue"| Q["In-memory queue"]
+    Q --> D["Dispatcher<br/>bounded concurrency"]
+    subgraph POOL["Background workers (thread pool)"]
+        T1["thread 1"]
+        T2["thread 2"]
+    end
+    D --> T1 & T2
+    T1 & T2 -->|"store result"| STORE[("Job store<br/>id → status / result")]
+    C -->|"3 · GET /jobs/:id (poll)"| API
+    API -->|"read"| STORE
+
+    style STORE fill:#f6c85f,stroke:#8a6d1a,color:#000
+```
+
+> The catch: accept-rate ≠ process-rate. Enqueue is O(1), so the queue can accept
+> far more than the workers can finish — `queue.depth` grows. In production you
+> **bound the queue** (reject/apply backpressure when full) and **scale
+> consumers**. The win is that a traffic spike no longer stalls the event loop;
+> it just lengthens the queue.
+
+---
+
+## 5. Don't do the work twice — caching
 
 A bounded LRU turns repeated/hot keys into µs responses. Misses still cost the
 full compute (pair with cluster/threads); hits skip it entirely.
@@ -145,7 +180,7 @@ sequenceDiagram
 
 ---
 
-## 5. Bound memory under load — streaming
+## 6. Bound memory under load — streaming
 
 Buffering builds the whole response in RAM (O(N) per in-flight request → GC
 pressure / OOM at scale). Streaming emits chunks with backpressure, so per-request
@@ -166,7 +201,7 @@ flowchart LR
 
 ---
 
-## 6. Framework overhead — raw http vs Express vs Fastify
+## 7. Framework overhead — raw http vs Express vs Fastify
 
 Frameworks are **orthogonal** to the event-loop story (`/compute` blocks in all
 three), but they differ on the per-request hot path. Measured on cheap `/ping`,
@@ -190,7 +225,7 @@ flowchart TB
 
 ---
 
-## 7. Putting it together — the full high-load blueprint
+## 8. Putting it together — the full high-load blueprint
 
 Combining all 10 points gives a full system-design topology. Here it is with each
 point numbered, so you can see where the runnable examples in this repo fit and
@@ -255,7 +290,7 @@ flowchart TB
 | 5 | In-memory caching | bounded LRU memoization | ✅ `05-caching` |
 | 6 | Database optimization | infrastructure (indexes, sharding) | ○ infra |
 | 7 | Performance optimization (don't block, stream) | blocking vs chunked vs cluster vs threads; streaming | ✅ `01,02,03,04,06,07,08` |
-| 8 | Asynchronous processing (worker threads / queues) | worker-thread pool locally; queues are infra | ✅ `04-worker-threads` |
+| 8 | Asynchronous processing (worker threads / queues) | worker-thread pool + an in-process job queue with background workers | ✅ `04-worker-threads`, `09-queue` |
 | 9 | Monitoring & alerting | event-loop delay + memory via `/stats` (a mini version) | ✅ `common/stats.js` |
 | 10 | Security & compliance | infrastructure (authn/z, TLS, validation) | ○ infra |
 
@@ -263,7 +298,7 @@ Legend: ✅ runnable & load-testable here · ◐ partial local analog · ○ dia
 
 ---
 
-## 8. The two axes of scaling
+## 9. The two axes of scaling
 
 ```mermaid
 flowchart LR

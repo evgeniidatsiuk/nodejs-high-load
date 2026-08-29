@@ -15,6 +15,7 @@
     "start:streaming": "node src/06-streaming/server.js",
     "start:express": "node src/07-express/server.js",
     "start:fastify": "node src/08-fastify/server.js",
+    "start:queue": "node src/09-queue/server.js",
     "load": "node load-tests/autocannon.js",
     "bench": "bash load-tests/bench.sh"
   },

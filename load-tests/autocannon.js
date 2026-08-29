@@ -14,11 +14,12 @@ const autocannon = require('autocannon');
 const url = process.argv[2] || 'http://localhost:3000/compute?n=100000';
 const connections = Number(process.env.CONNECTIONS) || 50;
 const duration = Number(process.env.DURATION) || 10;
+const method = (process.env.METHOD || 'GET').toUpperCase();
 
-console.log(`\nLoad testing: ${url}`);
+console.log(`\nLoad testing: ${method} ${url}`);
 console.log(`connections=${connections}  duration=${duration}s\n`);
 
-const instance = autocannon({ url, connections, duration }, (err, result) => {
+const instance = autocannon({ url, connections, duration, method }, (err, result) => {
   if (err) {
     console.error(err);
     process.exit(1);
